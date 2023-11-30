@@ -97,7 +97,6 @@ impl Book {
     }
 
     fn build_modules(&self, module_path: &[&str]) -> Result<()> {
-        // TODO: Handle `mod.rs` modules
         let path = if module_path.is_empty() {
             PathBuf::from("lib")
         } else {
@@ -168,8 +167,17 @@ impl Book {
     }
 
     fn parse_module(&self, path: &PathBuf) -> Result<SourceFile> {
-        let filename = self.src_dir.join(path).with_extension("rs");
-        let source_text = fs::read_to_string(filename)?;
+        let module_path = &self.src_dir.join(path);
+        let filename = module_path.with_extension("rs");
+
+        let source_text = fs::read_to_string(filename).or_else(|e| {
+            if matches!(e.kind(), io::ErrorKind::NotFound) {
+                fs::read_to_string(module_path.join("mod.rs"))
+            } else {
+                Err(e)
+            }
+        })?;
+
         let parsed = SourceFile::parse(&source_text);
         let errors = parsed.errors();
 
