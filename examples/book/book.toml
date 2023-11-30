@@ -1,0 +1,9 @@
+[book]
+authors = ["Simon Bourne"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Rust Book Example"
+
+[build]
+create-missing = false
