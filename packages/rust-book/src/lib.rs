@@ -97,7 +97,6 @@ impl Book {
     }
 
     fn build_modules(&self, module_path: &[&str]) -> Result<()> {
-        // TODO: Divide this up into functions
         // TODO: Handle `mod.rs` modules
         let path = if module_path.is_empty() {
             PathBuf::from("lib")
@@ -136,30 +135,9 @@ impl Book {
             expect_kind(SyntaxKind::L_CURLY, stmts.pop_front())?;
             expect_kind(SyntaxKind::R_CURLY, stmts.pop_back())?;
 
-            // Find prefix
             let body_text = stmts.iter().map(|s| s.to_string()).collect::<String>();
-            let mut ws_prefixes = body_text.lines().filter_map(whitespace_prefix);
-
-            let longest_prefix = if let Some(mut longest_prefix) = ws_prefixes.next() {
-                for prefix in ws_prefixes {
-                    // We can use `split_at` with `find_position` as our strings
-                    // only contain single byte chars (' ' or '\t').
-                    longest_prefix = longest_prefix
-                        .split_at(
-                            longest_prefix
-                                .chars()
-                                .zip(prefix.chars())
-                                .find_position(|(x, y)| x != y)
-                                .map(|(position, _ch)| position)
-                                .unwrap_or_else(|| min(longest_prefix.len(), prefix.len())),
-                        )
-                        .0;
-                }
-
-                longest_prefix
-            } else {
-                ""
-            };
+            let ws_prefixes = body_text.lines().filter_map(whitespace_prefix);
+            let longest_prefix = longest_prefix(ws_prefixes);
 
             if stmts
                 .front()
@@ -200,6 +178,29 @@ impl Book {
         }
 
         Ok(parsed.tree())
+    }
+}
+
+fn longest_prefix<'a>(mut prefixes: impl Iterator<Item = &'a str>) -> &'a str {
+    if let Some(mut longest_prefix) = prefixes.next() {
+        for prefix in prefixes {
+            // We can use `split_at` with `find_position` as our strings
+            // only contain single byte chars (' ' or '\t').
+            longest_prefix = longest_prefix
+                .split_at(
+                    longest_prefix
+                        .chars()
+                        .zip(prefix.chars())
+                        .find_position(|(x, y)| x != y)
+                        .map(|(position, _ch)| position)
+                        .unwrap_or_else(|| min(longest_prefix.len(), prefix.len())),
+                )
+                .0;
+        }
+
+        longest_prefix
+    } else {
+        ""
     }
 }
 
