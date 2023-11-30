@@ -74,7 +74,8 @@ impl Book {
     }
 
     fn build(&self) -> Result<()> {
-        fs::remove_dir_all(&self.out_dir)?;
+        // TODO: Figure out why build fails sometimes when we remove the output dir:
+        // fs::remove_dir_all(&self.out_dir)?;
         fs::create_dir_all(&self.out_dir)?;
         let mdbook_config_file = self.cargo_manifest_dir.join("book.toml");
         fs::copy(&mdbook_config_file, self.out_dir.join("book.toml"))?;
