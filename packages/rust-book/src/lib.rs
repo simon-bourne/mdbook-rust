@@ -62,7 +62,7 @@ impl Book {
         let cargo_manifest_dir = env::var("CARGO_MANIFEST_DIR")?;
         let out_dir_name = env::var("OUT_DIR")?;
         let out_dir: PathBuf = [&out_dir_name, "rust-book"].into_iter().collect();
-        
+
         Ok(Self {
             cargo_manifest_dir: PathBuf::from(&cargo_manifest_dir),
             src_dir: [&cargo_manifest_dir, "src"].into_iter().collect(),
@@ -70,7 +70,7 @@ impl Book {
             out_src_dir: out_dir.join("src"),
         })
     }
-    
+
     fn build(&self) -> Result<()> {
         fs::remove_dir_all(&self.out_dir)?;
         fs::create_dir_all(&self.out_dir)?;
