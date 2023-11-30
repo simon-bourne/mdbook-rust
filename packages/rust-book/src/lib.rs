@@ -99,7 +99,6 @@ impl Book {
             match item {
                 Item::Fn(function) => {
                     if is_public(&function) && is_named(&function, "body") {
-                        // TODO: Strip prefix
                         if let Some(stmts) = function.body().and_then(|body| body.stmt_list()) {
                             let mut stmts: VecDeque<_> =
                                 stmts.syntax().children_with_tokens().collect();
@@ -149,28 +148,24 @@ impl Book {
                             for node in stmts {
                                 match &node {
                                     NodeOrToken::Node(node) => {
-                                        if !in_code_block {
-                                            writeln!(&mut output_file, "\n\n```rust")?;
-                                        } else {
-                                            write!(&mut output_file, "{whitespace}")?;
-                                        }
-
+                                        ensure_in_code_block(
+                                            &mut output_file,
+                                            &mut in_code_block,
+                                            &whitespace,
+                                        )?;
                                         write!(&mut output_file, "{node}")?;
-                                        in_code_block = true;
                                         whitespace.clear();
                                     }
                                     NodeOrToken::Token(token) => {
                                         if let Some(comment) = ast::Comment::cast(token.clone()) {
                                             if comment.is_doc() {
-                                                // TODO: Factor this out from here and Node writer
-                                                if !in_code_block {
-                                                    writeln!(&mut output_file, "\n\n```rust")?;
-                                                } else {
-                                                    write!(&mut output_file, "{whitespace}")?;
-                                                }
+                                                ensure_in_code_block(
+                                                    &mut output_file,
+                                                    &mut in_code_block,
+                                                    &whitespace,
+                                                )?;
 
                                                 write!(&mut output_file, "{comment}")?;
-                                                in_code_block = true;
                                             } else {
                                                 let comment_suffix =
                                                     &comment.text()[comment.prefix().len()..];
@@ -225,6 +220,21 @@ impl Book {
 
         Ok(())
     }
+}
+
+fn ensure_in_code_block(
+    output_file: &mut BufWriter<File>,
+    in_code_block: &mut bool,
+    whitespace: &str,
+) -> Result<()> {
+    if !*in_code_block {
+        writeln!(output_file, "\n\n```rust")?;
+    } else {
+        write!(output_file, "{whitespace}")?;
+    }
+
+    *in_code_block = true;
+    Ok(())
 }
 
 fn whitespace_prefix(line: &str) -> Option<&str> {
