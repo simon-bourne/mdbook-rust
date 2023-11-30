@@ -1,5 +1,5 @@
 [workspace]
-members = ["packages/*"]
+members = ["packages/*", "examples/*"]
 resolver = "2"
 
 [workspace.package]
@@ -13,4 +13,7 @@ repository = "https://github.com/simon-bourne/rust-book"
 [workspace.dependencies]
 rust-book = { version = "0.1.0", path = "packages/rust-book" }
 
+itertools = "0.12.0"
+ra_ap_syntax = "0.0.187"
+thiserror = "1.0.50"
 xtask-base = { git = "https://github.com/simon-bourne/rust-xtask-base" }

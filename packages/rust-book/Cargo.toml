@@ -11,3 +11,6 @@ keywords = []
 readme = "../../README.md"
 
 [dependencies]
+itertools.workspace = true
+ra_ap_syntax.workspace = true
+thiserror.workspace = true
