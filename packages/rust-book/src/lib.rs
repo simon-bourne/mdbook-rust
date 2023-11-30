@@ -163,19 +163,25 @@ impl Book {
                 }
                 Item::Module(module) => {
                     if is_public(&module) {
-                        if let Some(name) = module.name() {
-                            self.build_modules(
-                                &module_path
-                                    .iter()
-                                    .copied()
-                                    .chain([name.text().as_str()])
-                                    .collect::<Vec<_>>(),
-                            )?;
-                        }
+                        self.write_module(module, module_path)?;
                     }
                 }
                 _ => (),
             }
+        }
+
+        Ok(())
+    }
+
+    fn write_module(&self, module: ast::Module, module_path: &[&str]) -> Result<()> {
+        if let Some(name) = module.name() {
+            self.build_modules(
+                &module_path
+                    .iter()
+                    .copied()
+                    .chain([name.text().as_str()])
+                    .collect::<Vec<_>>(),
+            )?;
         }
 
         Ok(())
