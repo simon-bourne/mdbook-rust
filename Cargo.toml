@@ -1,0 +1,16 @@
+[workspace]
+members = ["packages/*"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Simon Bourne <simonbourne@gmail.com>"]
+homepage = "https://github.com/simon-bourne/rust-book"
+repository = "https://github.com/simon-bourne/rust-book"
+
+[workspace.dependencies]
+rust-book = { version = "0.1.0", path = "packages/rust-book" }
+
+xtask-base = { git = "https://github.com/simon-bourne/rust-xtask-base" }

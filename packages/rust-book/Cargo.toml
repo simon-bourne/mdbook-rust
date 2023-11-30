@@ -1,0 +1,13 @@
+[package]
+name = "rust-book"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+authors = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+description = "Rust Book"
+keywords = []
+readme = "../../README.md"
+
+[dependencies]
