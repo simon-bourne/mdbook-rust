@@ -12,5 +12,6 @@ readme = "../../README.md"
 
 [dependencies]
 itertools.workspace = true
+mdbook.workspace = true
 ra_ap_syntax.workspace = true
 thiserror.workspace = true

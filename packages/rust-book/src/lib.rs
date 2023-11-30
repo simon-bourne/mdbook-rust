@@ -2,7 +2,6 @@ use std::{
     cmp::min,
     collections::VecDeque,
     env::{self, VarError},
-    error,
     fmt::{self, Display},
     fs::{self, File},
     io::{self, BufWriter, Write},
@@ -11,6 +10,7 @@ use std::{
 };
 
 use itertools::Itertools;
+use mdbook::MDBook;
 use ra_ap_syntax::{
     ast::{self, HasModuleItem, HasName, HasVisibility, Item, VisibilityKind},
     AstNode, AstToken, NodeOrToken, SourceFile, SyntaxKind, SyntaxNode, SyntaxToken,
@@ -26,7 +26,7 @@ impl Error {
     }
 }
 
-trait ToError: error::Error {}
+trait ToError: Display {}
 
 impl<T: ToError> From<T> for Error {
     fn from(value: T) -> Self {
@@ -36,6 +36,7 @@ impl<T: ToError> From<T> for Error {
 
 impl ToError for VarError {}
 impl ToError for io::Error {}
+impl ToError for mdbook::errors::Error {}
 
 impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -61,7 +62,7 @@ impl Book {
         let cargo_manifest_dir = env::var("CARGO_MANIFEST_DIR")?;
         let out_dir_name = env::var("OUT_DIR")?;
         let out_dir: PathBuf = [&out_dir_name, "rust-book"].into_iter().collect();
-
+        
         Ok(Self {
             cargo_manifest_dir: PathBuf::from(&cargo_manifest_dir),
             src_dir: [&cargo_manifest_dir, "src"].into_iter().collect(),
@@ -69,7 +70,7 @@ impl Book {
             out_src_dir: out_dir.join("src"),
         })
     }
-
+    
     fn build(&self) -> Result<()> {
         fs::create_dir_all(&self.out_dir)?;
         fs::copy(
@@ -81,7 +82,12 @@ impl Book {
             self.src_dir.join("SUMMARY.md"),
             self.out_src_dir.join("SUMMARY.md"),
         )?;
-        self.build_modules(&[])
+        self.build_modules(&[])?;
+
+        MDBook::load(&self.out_dir)?.build()?;
+        println!("Built rust book to '{:?}'", &self.out_dir);
+
+        Ok(())
     }
 
     fn build_modules(&self, module_path: &[&str]) -> Result<()> {
@@ -217,8 +223,10 @@ impl Book {
                             }
 
                             if in_code_block {
-                                writeln!(&mut output_file, "\n```")?;
+                                write!(&mut output_file, "\n```")?;
                             }
+
+                            writeln!(&mut output_file)?;
                         }
                     }
                 }
