@@ -46,23 +46,42 @@ impl Display for Error {
 pub type Result<T> = result::Result<T, Error>;
 
 pub fn build() -> Result<()> {
-    Book::new()?.build_modules(&[])
+    Book::new()?.build()
 }
 
 struct Book {
-    cargo_manifest_dir: String,
-    out_dir: String,
+    cargo_manifest_dir: PathBuf,
+    src_dir: PathBuf,
+    out_dir: PathBuf,
+    out_src_dir: PathBuf,
 }
 
 impl Book {
     fn new() -> Result<Self> {
         let cargo_manifest_dir = env::var("CARGO_MANIFEST_DIR")?;
-        let out_dir = env::var("OUT_DIR")?;
+        let out_dir_name = env::var("OUT_DIR")?;
+        let out_dir: PathBuf = [&out_dir_name, "rust-book"].into_iter().collect();
 
         Ok(Self {
-            cargo_manifest_dir,
-            out_dir,
+            cargo_manifest_dir: PathBuf::from(&cargo_manifest_dir),
+            src_dir: [&cargo_manifest_dir, "src"].into_iter().collect(),
+            out_dir: out_dir.clone(),
+            out_src_dir: out_dir.join("src"),
         })
+    }
+
+    fn build(&self) -> Result<()> {
+        fs::create_dir_all(&self.out_dir)?;
+        fs::copy(
+            self.cargo_manifest_dir.join("book.toml"),
+            self.out_dir.join("book.toml"),
+        )?;
+        fs::create_dir_all(&self.out_src_dir)?;
+        fs::copy(
+            self.src_dir.join("SUMMARY.md"),
+            self.out_src_dir.join("SUMMARY.md"),
+        )?;
+        self.build_modules(&[])
     }
 
     fn build_modules(&self, module_path: &[&str]) -> Result<()> {
@@ -73,11 +92,7 @@ impl Book {
         } else {
             module_path.iter().collect()
         };
-        let filename = [&self.cargo_manifest_dir, "src"]
-            .iter()
-            .collect::<PathBuf>()
-            .join(&path)
-            .with_extension("rs");
+        let filename = self.src_dir.join(&path).with_extension("rs");
         let source_text = fs::read_to_string(filename)?;
         let parsed = SourceFile::parse(&source_text);
 
@@ -94,11 +109,7 @@ impl Book {
                 Item::Fn(function) => {
                     if is_public(&function) && is_named(&function, "body") {
                         if let Some(stmts) = function.body().and_then(|body| body.stmt_list()) {
-                            let output_filename = [&self.out_dir, "rust-book"]
-                                .iter()
-                                .collect::<PathBuf>()
-                                .join(&path)
-                                .with_extension("md");
+                            let output_filename = self.out_src_dir.join(&path).with_extension("md");
                             fs::create_dir_all(output_filename.parent().unwrap())?;
                             let mut output_file = BufWriter::new(File::create(output_filename)?);
 
