@@ -77,16 +77,18 @@ impl Book {
         // Make a best effort to remove the old build directory.
         let _result = fs::remove_dir_all(&self.out_dir);
         fs::create_dir_all(&self.out_dir)?;
-        let mdbook_config_file = self.cargo_manifest_dir.join("book.toml");
-        fs::copy(&mdbook_config_file, self.out_dir.join("book.toml"))?;
+        let mdbook_config_file = "book.toml";
+        let mdbook_config_path = self.cargo_manifest_dir.join(mdbook_config_file);
+        fs::copy(&mdbook_config_path, self.out_dir.join(mdbook_config_file))?;
         fs::create_dir_all(&self.out_src_dir)?;
+        let summary_file = "SUMMARY.md";
         fs::copy(
-            self.src_dir.join("SUMMARY.md"),
-            self.out_src_dir.join("SUMMARY.md"),
+            self.src_dir.join(summary_file),
+            self.out_src_dir.join(summary_file),
         )?;
         self.build_modules(&[])?;
 
-        let mut config = mdbook::Config::from_disk(mdbook_config_file)?;
+        let mut config = mdbook::Config::from_disk(mdbook_config_path)?;
         config.build.build_dir = self.book_out_dir.clone();
         MDBook::load_with_config(&self.out_dir, config)?.build()?;
         println!("Built rust book to '{:?}'", &self.out_dir);
