@@ -55,6 +55,7 @@ struct Book {
     src_dir: PathBuf,
     out_dir: PathBuf,
     out_src_dir: PathBuf,
+    book_out_dir: PathBuf,
 }
 
 impl Book {
@@ -68,6 +69,7 @@ impl Book {
             src_dir: [&cargo_manifest_dir, "src"].into_iter().collect(),
             out_dir: out_dir.clone(),
             out_src_dir: out_dir.join("src"),
+            book_out_dir: [&cargo_manifest_dir, "book"].into_iter().collect(),
         })
     }
 
@@ -75,10 +77,8 @@ impl Book {
         // TODO: Figure out why build fails sometimes when we remove the output dir:
         // fs::remove_dir_all(&self.out_dir)?;
         fs::create_dir_all(&self.out_dir)?;
-        fs::copy(
-            self.cargo_manifest_dir.join("book.toml"),
-            self.out_dir.join("book.toml"),
-        )?;
+        let mdbook_config_file = self.cargo_manifest_dir.join("book.toml");
+        fs::copy(&mdbook_config_file, self.out_dir.join("book.toml"))?;
         fs::create_dir_all(&self.out_src_dir)?;
         fs::copy(
             self.src_dir.join("SUMMARY.md"),
@@ -86,7 +86,9 @@ impl Book {
         )?;
         self.build_modules(&[])?;
 
-        MDBook::load(&self.out_dir)?.build()?;
+        let mut config = mdbook::Config::from_disk(mdbook_config_file)?;
+        config.build.build_dir = self.book_out_dir.clone();
+        MDBook::load_with_config(&self.out_dir, config)?.build()?;
         println!("Built rust book to '{:?}'", &self.out_dir);
 
         Ok(())
