@@ -123,7 +123,7 @@ impl Book {
                         if let Some(stmts) = function.body().and_then(|body| body.stmt_list()) {
                             let output_filename = self.out_src_dir.join(&path).with_extension("md");
                             fs::create_dir_all(output_filename.parent().unwrap())?;
-                            let mut output_file = BufWriter::new(File::create(output_filename)?);
+                            let output_file = BufWriter::new(File::create(output_filename)?);
 
                             let mut stmts: VecDeque<_> =
                                 stmts.syntax().children_with_tokens().collect();
@@ -167,72 +167,7 @@ impl Book {
                                 stmts.pop_front();
                             }
 
-                            let mut whitespace = String::new();
-                            let mut in_code_block = false;
-
-                            for node in stmts {
-                                match &node {
-                                    NodeOrToken::Node(node) => {
-                                        ensure_in_code_block(
-                                            &mut output_file,
-                                            &mut in_code_block,
-                                            &whitespace,
-                                        )?;
-                                        write!(&mut output_file, "{node}")?;
-                                        whitespace.clear();
-                                    }
-                                    NodeOrToken::Token(token) => {
-                                        if let Some(comment) = ast::Comment::cast(token.clone()) {
-                                            if comment.is_doc() {
-                                                ensure_in_code_block(
-                                                    &mut output_file,
-                                                    &mut in_code_block,
-                                                    &whitespace,
-                                                )?;
-
-                                                write!(&mut output_file, "{comment}")?;
-                                            } else {
-                                                let comment_suffix =
-                                                    &comment.text()[comment.prefix().len()..];
-
-                                                let comment_text = match comment.kind().shape {
-                                                    ast::CommentShape::Line => comment_suffix,
-                                                    ast::CommentShape::Block => comment_suffix
-                                                        .strip_suffix("*/")
-                                                        .unwrap_or(comment_suffix),
-                                                }
-                                                .trim_start();
-
-                                                if in_code_block {
-                                                    writeln!(&mut output_file, "\n```\n")?;
-                                                } else {
-                                                    write!(&mut output_file, "{whitespace}")?;
-                                                }
-
-                                                write!(&mut output_file, "{comment_text}")?;
-                                                in_code_block = false;
-                                            }
-
-                                            whitespace.clear();
-                                        } else if ast::Whitespace::can_cast(token.kind()) {
-                                            let token_text = token.to_string();
-                                            let (prefix, suffix) = token_text
-                                                .rsplit_once(longest_prefix)
-                                                .unwrap_or((&token_text, ""));
-                                            whitespace = format!("{prefix}{suffix}");
-                                        } else {
-                                            write!(&mut output_file, "{whitespace}{token}")?;
-                                            whitespace.clear();
-                                        }
-                                    }
-                                }
-                            }
-
-                            if in_code_block {
-                                write!(&mut output_file, "\n```")?;
-                            }
-
-                            writeln!(&mut output_file)?;
+                            write_body(stmts, output_file, longest_prefix)?;
                         }
                     }
                 }
@@ -257,15 +192,93 @@ impl Book {
     }
 }
 
+fn write_body(
+    stmts: impl IntoIterator<Item = NodeOrToken<SyntaxNode, SyntaxToken>>,
+    mut output_file: BufWriter<File>,
+    longest_prefix: &str,
+) -> Result<()> {
+    let mut whitespace = String::new();
+    let mut in_code_block = false;
+
+    for node in stmts {
+        match &node {
+            NodeOrToken::Node(node) => {
+                ensure_in_code_block(&mut output_file, &mut in_code_block, &whitespace)?;
+                write!(&mut output_file, "{node}")?;
+                whitespace.clear();
+            }
+            NodeOrToken::Token(token) => {
+                if let Some(comment) = ast::Comment::cast(token.clone()) {
+                    if comment.is_doc() {
+                        ensure_in_code_block(&mut output_file, &mut in_code_block, &whitespace)?;
+
+                        write!(&mut output_file, "{comment}")?;
+                    } else {
+                        ensure_in_markdown(&mut output_file, &mut in_code_block, &whitespace)?;
+                        write_comment(&mut output_file, comment)?;
+                    }
+
+                    whitespace.clear();
+                } else if ast::Whitespace::can_cast(token.kind()) {
+                    whitespace = remove_prefix(token, longest_prefix);
+                } else {
+                    write!(&mut output_file, "{whitespace}{token}")?;
+                    whitespace.clear();
+                }
+            }
+        }
+    }
+
+    if in_code_block {
+        write!(&mut output_file, "\n```")?;
+    }
+
+    writeln!(&mut output_file)?;
+
+    Ok(())
+}
+
+fn write_comment(output_file: &mut BufWriter<File>, comment: ast::Comment) -> Result<()> {
+    let comment_suffix = &comment.text()[comment.prefix().len()..];
+    let comment_text = match comment.kind().shape {
+        ast::CommentShape::Line => comment_suffix,
+        ast::CommentShape::Block => comment_suffix.strip_suffix("*/").unwrap_or(comment_suffix),
+    }
+    .trim_start();
+    write!(output_file, "{comment_text}")?;
+    Ok(())
+}
+
+fn remove_prefix(token: &SyntaxToken, prefix: &str) -> String {
+    let token_text = token.to_string();
+    let (prefix, suffix) = token_text.rsplit_once(prefix).unwrap_or((&token_text, ""));
+    format!("{prefix}{suffix}")
+}
+
+fn ensure_in_markdown(
+    output_file: &mut BufWriter<File>,
+    in_code_block: &mut bool,
+    whitespace: &str,
+) -> Result<()> {
+    if *in_code_block {
+        writeln!(output_file, "\n```\n")?;
+    } else {
+        write!(output_file, "{whitespace}")?;
+    }
+
+    *in_code_block = false;
+    Ok(())
+}
+
 fn ensure_in_code_block(
     output_file: &mut BufWriter<File>,
     in_code_block: &mut bool,
     whitespace: &str,
 ) -> Result<()> {
-    if !*in_code_block {
-        writeln!(output_file, "\n\n```rust")?;
-    } else {
+    if *in_code_block {
         write!(output_file, "{whitespace}")?;
+    } else {
+        writeln!(output_file, "\n\n```rust")?;
     }
 
     *in_code_block = true;
