@@ -65,26 +65,20 @@ impl Book {
         })
     }
 
-    fn build_modules(&self, path: &[&str]) -> Result<()> {
+    fn build_modules(&self, module_path: &[&str]) -> Result<()> {
         // TODO: Divide this up into functions
-        let path = if path.is_empty() {
-            vec!["lib.rs"]
+        // TODO: Handle `mod.rs` modules
+        let path = if module_path.is_empty() {
+            PathBuf::from("lib")
         } else {
-            path.to_vec()
+            module_path.iter().collect()
         };
         let filename = [&self.cargo_manifest_dir, "src"]
             .iter()
             .collect::<PathBuf>()
-            .join(path.iter().collect::<PathBuf>());
+            .join(&path)
+            .with_extension("rs");
         let source_text = fs::read_to_string(filename)?;
-        let mut output_filename: PathBuf = [&self.out_dir, "rust-book"]
-            .into_iter()
-            .chain(path)
-            .collect();
-        output_filename.set_extension("md");
-        fs::create_dir_all(output_filename.parent().unwrap())?;
-        let mut output_file = BufWriter::new(File::create(output_filename)?);
-
         let parsed = SourceFile::parse(&source_text);
 
         let errors = parsed.errors();
@@ -100,6 +94,14 @@ impl Book {
                 Item::Fn(function) => {
                     if is_public(&function) && is_named(&function, "body") {
                         if let Some(stmts) = function.body().and_then(|body| body.stmt_list()) {
+                            let output_filename = [&self.out_dir, "rust-book"]
+                                .iter()
+                                .collect::<PathBuf>()
+                                .join(&path)
+                                .with_extension("md");
+                            fs::create_dir_all(output_filename.parent().unwrap())?;
+                            let mut output_file = BufWriter::new(File::create(output_filename)?);
+
                             let mut stmts: VecDeque<_> =
                                 stmts.syntax().children_with_tokens().collect();
 
@@ -211,7 +213,15 @@ impl Book {
                 }
                 Item::Module(module) => {
                     if is_public(&module) {
-                        todo!()
+                        if let Some(name) = module.name() {
+                            self.build_modules(
+                                &module_path
+                                    .iter()
+                                    .copied()
+                                    .chain([name.text().as_str()])
+                                    .collect::<Vec<_>>(),
+                            )?;
+                        }
                     }
                 }
                 _ => (),

@@ -1,3 +1,5 @@
+pub mod chapter1;
+
 pub fn body() {
     // xyz
     let _w = 0;
