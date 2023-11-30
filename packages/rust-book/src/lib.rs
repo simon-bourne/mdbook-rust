@@ -110,55 +110,7 @@ impl Book {
             match item {
                 Item::Fn(function) => {
                     if is_public(&function) && is_named(&function, "body") {
-                        if let Some(stmts) = function.body().and_then(|body| body.stmt_list()) {
-                            let output_filename = self.out_src_dir.join(&path).with_extension("md");
-                            fs::create_dir_all(output_filename.parent().unwrap())?;
-                            let output_file = BufWriter::new(File::create(output_filename)?);
-
-                            let mut stmts: VecDeque<_> =
-                                stmts.syntax().children_with_tokens().collect();
-
-                            expect_kind(SyntaxKind::L_CURLY, stmts.pop_front())?;
-                            expect_kind(SyntaxKind::R_CURLY, stmts.pop_back())?;
-
-                            // Find prefix
-                            let body_text = stmts.iter().map(|s| s.to_string()).collect::<String>();
-                            let mut ws_prefixes = body_text.lines().filter_map(whitespace_prefix);
-
-                            let longest_prefix =
-                                if let Some(mut longest_prefix) = ws_prefixes.next() {
-                                    for prefix in ws_prefixes {
-                                        // We can use `split_at` with `find_position` as our strings
-                                        // only contain single byte chars (' ' or '\t').
-                                        longest_prefix = longest_prefix
-                                            .split_at(
-                                                longest_prefix
-                                                    .chars()
-                                                    .zip(prefix.chars())
-                                                    .find_position(|(x, y)| x != y)
-                                                    .map(|(position, _ch)| position)
-                                                    .unwrap_or_else(|| {
-                                                        min(longest_prefix.len(), prefix.len())
-                                                    }),
-                                            )
-                                            .0;
-                                    }
-
-                                    longest_prefix
-                                } else {
-                                    ""
-                                };
-
-                            if stmts
-                                .front()
-                                .and_then(|node| node.as_token())
-                                .is_some_and(|token| ast::Whitespace::can_cast(token.kind()))
-                            {
-                                stmts.pop_front();
-                            }
-
-                            write_body(stmts, output_file, longest_prefix)?;
-                        }
+                        self.write_function(function, &path)?;
                     }
                 }
                 Item::Module(module) => {
@@ -168,6 +120,56 @@ impl Book {
                 }
                 _ => (),
             }
+        }
+
+        Ok(())
+    }
+
+    fn write_function(&self, function: ast::Fn, path: &PathBuf) -> Result<()> {
+        if let Some(stmts) = function.body().and_then(|body| body.stmt_list()) {
+            let output_filename = self.out_src_dir.join(path).with_extension("md");
+            fs::create_dir_all(output_filename.parent().unwrap())?;
+            let output_file = BufWriter::new(File::create(output_filename)?);
+
+            let mut stmts: VecDeque<_> = stmts.syntax().children_with_tokens().collect();
+
+            expect_kind(SyntaxKind::L_CURLY, stmts.pop_front())?;
+            expect_kind(SyntaxKind::R_CURLY, stmts.pop_back())?;
+
+            // Find prefix
+            let body_text = stmts.iter().map(|s| s.to_string()).collect::<String>();
+            let mut ws_prefixes = body_text.lines().filter_map(whitespace_prefix);
+
+            let longest_prefix = if let Some(mut longest_prefix) = ws_prefixes.next() {
+                for prefix in ws_prefixes {
+                    // We can use `split_at` with `find_position` as our strings
+                    // only contain single byte chars (' ' or '\t').
+                    longest_prefix = longest_prefix
+                        .split_at(
+                            longest_prefix
+                                .chars()
+                                .zip(prefix.chars())
+                                .find_position(|(x, y)| x != y)
+                                .map(|(position, _ch)| position)
+                                .unwrap_or_else(|| min(longest_prefix.len(), prefix.len())),
+                        )
+                        .0;
+                }
+
+                longest_prefix
+            } else {
+                ""
+            };
+
+            if stmts
+                .front()
+                .and_then(|node| node.as_token())
+                .is_some_and(|token| ast::Whitespace::can_cast(token.kind()))
+            {
+                stmts.pop_front();
+            }
+
+            write_body(stmts, output_file, longest_prefix)?;
         }
 
         Ok(())
