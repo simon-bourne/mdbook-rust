@@ -104,17 +104,7 @@ impl Book {
         } else {
             module_path.iter().collect()
         };
-        let filename = self.src_dir.join(&path).with_extension("rs");
-        let source_text = fs::read_to_string(filename)?;
-        let parsed = SourceFile::parse(&source_text);
-
-        let errors = parsed.errors();
-
-        if !errors.is_empty() {
-            Error::raise(errors.iter().join("\n"))?;
-        }
-
-        let source = parsed.tree();
+        let source = self.parse_module(&path)?;
 
         for item in source.items() {
             match item {
@@ -189,6 +179,19 @@ impl Book {
         }
 
         Ok(())
+    }
+
+    fn parse_module(&self, path: &PathBuf) -> Result<SourceFile> {
+        let filename = self.src_dir.join(path).with_extension("rs");
+        let source_text = fs::read_to_string(filename)?;
+        let parsed = SourceFile::parse(&source_text);
+        let errors = parsed.errors();
+
+        if !errors.is_empty() {
+            Error::raise(errors.iter().join("\n"))?;
+        }
+
+        Ok(parsed.tree())
     }
 }
 
