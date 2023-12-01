@@ -182,10 +182,21 @@ fn write_comment(comment: ast::Comment, prefix: &str) -> String {
     let comment_text = match comment.kind().shape {
         ast::CommentShape::Line => comment_suffix,
         ast::CommentShape::Block => comment_suffix.strip_suffix("*/").unwrap_or(comment_suffix),
-    }
-    .trim_start();
+    };
 
-    write_lines(comment_text, prefix)
+    let mut lines = comment_text.split('\n');
+    let mut output = String::new();
+
+    if let Some(first_line) = lines.next() {
+        output.push_str(first_line.strip_prefix(' ').unwrap_or(first_line));
+    }
+
+    for line in lines {
+        output.push('\n');
+        output.push_str(line.strip_prefix(prefix).unwrap_or(line))
+    }
+
+    output
 }
 
 fn parse_module(source_text: &str) -> Result<SourceFile> {
@@ -267,3 +278,5 @@ fn expect_kind(
         bail!("Unexpected token")
     }
 }
+
+// TODO: Tests
