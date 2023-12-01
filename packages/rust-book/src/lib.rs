@@ -219,6 +219,8 @@ fn write_body(
 ) -> Result<()> {
     let mut whitespace = String::new();
     let mut in_code_block = false;
+    // TODO: Handle whitespace properly. Render to string, split into lines and
+    // remove prefix.
 
     for node in stmts {
         match &node {
