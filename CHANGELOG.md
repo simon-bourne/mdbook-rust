@@ -2,6 +2,8 @@
 
 ## Next
 
+- Add `,ignore` to Rust code fences
+
 ## 0.1.1 2023-12-01
 
 - Add a test harness
