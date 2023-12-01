@@ -226,7 +226,7 @@ fn write_body(
         match &node {
             NodeOrToken::Node(node) => {
                 ensure_in_code_block(&mut output_file, &mut in_code_block, &whitespace)?;
-                write!(&mut output_file, "{node}")?;
+                write_lines(&mut output_file, node, longest_prefix)?;
                 whitespace.clear();
             }
             NodeOrToken::Token(token) => {
@@ -234,17 +234,18 @@ fn write_body(
                     if comment.is_doc() {
                         ensure_in_code_block(&mut output_file, &mut in_code_block, &whitespace)?;
 
-                        write!(&mut output_file, "{comment}")?;
+                        write_lines(&mut output_file, comment, longest_prefix)?;
                     } else {
                         ensure_in_markdown(&mut output_file, &mut in_code_block, &whitespace)?;
-                        write_comment(&mut output_file, comment)?;
+                        write_comment(&mut output_file, comment, longest_prefix)?;
                     }
 
                     whitespace.clear();
                 } else if ast::Whitespace::can_cast(token.kind()) {
                     whitespace = remove_prefix(token, longest_prefix);
                 } else {
-                    write!(&mut output_file, "{whitespace}{token}")?;
+                    write!(&mut output_file, "{whitespace}")?;
+                    write_lines(&mut output_file, token, longest_prefix)?;
                     whitespace.clear();
                 }
             }
@@ -260,15 +261,30 @@ fn write_body(
     Ok(())
 }
 
-fn write_comment(output_file: &mut BufWriter<File>, comment: ast::Comment) -> Result<()> {
+fn write_lines(output_file: &mut BufWriter<File>, text: impl Display, prefix: &str) -> Result<()> {
+    let text = text
+        .to_string()
+        .split('\n')
+        .map(|line| line.strip_prefix(prefix).unwrap_or(line))
+        .join("\n");
+    write!(output_file, "{text}")?;
+
+    Ok(())
+}
+
+fn write_comment(
+    output_file: &mut BufWriter<File>,
+    comment: ast::Comment,
+    prefix: &str,
+) -> Result<()> {
     let comment_suffix = &comment.text()[comment.prefix().len()..];
     let comment_text = match comment.kind().shape {
         ast::CommentShape::Line => comment_suffix,
         ast::CommentShape::Block => comment_suffix.strip_suffix("*/").unwrap_or(comment_suffix),
     }
     .trim_start();
-    write!(output_file, "{comment_text}")?;
-    Ok(())
+
+    write_lines(output_file, comment_text, prefix)
 }
 
 fn remove_prefix(token: &SyntaxToken, prefix: &str) -> String {

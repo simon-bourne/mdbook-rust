@@ -11,4 +11,8 @@ pub fn body() {
 
     # */
     let _x = 1;
+
+    for i in 0..10 {
+        println!("Hello {i}");
+    }
 }
