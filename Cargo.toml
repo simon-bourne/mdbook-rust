@@ -7,14 +7,17 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Simon Bourne <simonbourne@gmail.com>"]
-homepage = "https://github.com/simon-bourne/rust-book"
-repository = "https://github.com/simon-bourne/rust-book"
+homepage = "https://github.com/simon-bourne/mdbook-rust"
+repository = "https://github.com/simon-bourne/mdbook-rust"
 
 [workspace.dependencies]
-rust-book = { version = "0.1.0", path = "packages/rust-book" }
+mdbook-rust = { version = "0.1.0", path = "packages/mdbook-rust" }
 
+anyhow = "1.0.75"
+indoc = "2.0.4"
 itertools = "0.12.0"
 mdbook = "0.4.36"
 ra_ap_syntax = "0.0.187"
-thiserror = "1.0.50"
+semver = "1.0.20"
+serde_json = "1.0.108"
 xtask-base = { git = "https://github.com/simon-bourne/rust-xtask-base" }

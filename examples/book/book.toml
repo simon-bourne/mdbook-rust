@@ -7,3 +7,5 @@ title = "Rust Book Example"
 
 [build]
 create-missing = false
+
+[preprocessor.rust]

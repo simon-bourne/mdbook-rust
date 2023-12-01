@@ -1,7 +1,4 @@
 [package]
-name = "rust-book-example"
+name = "mdbook-rust-example"
 version = "0.0.0"
 edition = { workspace = true }
-
-[build-dependencies]
-rust-book.workspace = true
