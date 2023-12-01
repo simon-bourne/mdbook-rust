@@ -141,7 +141,6 @@ fn write_body(
                 if let Some(comment) = ast::Comment::cast(token.clone()) {
                     if comment.is_doc() {
                         output.push_str(ensure_in_code_block(&mut in_code_block, &whitespace));
-
                         output.push_str(&write_lines(comment, longest_prefix));
                     } else {
                         output.push_str(ensure_in_markdown(&mut in_code_block, &whitespace));
