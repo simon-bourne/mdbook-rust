@@ -7,7 +7,7 @@ authors = { workspace = true }
 homepage = { workspace = true }
 repository = { workspace = true }
 description = "Enhanced Rust support for MDBook"
-keywords = []
+keywords = ["mdbook", "rustbook"]
 readme = "../../README.md"
 
 [dependencies]
