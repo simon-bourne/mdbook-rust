@@ -80,21 +80,29 @@ fn preprocess() -> Result<()> {
 fn write_chapter(chapter: &mut Chapter) -> Result<()> {
     if let Some(path) = &chapter.path {
         if path.extension() == Some("rs".as_ref()) {
-            let source = parse_module(&chapter.content)?;
-
-            for item in source.items() {
-                if let Item::Fn(function) = item {
-                    if is_named(&function, "body") {
-                        if let Some(new_content) = write_function(function)? {
-                            chapter.content = new_content;
-                        }
-                    }
-                }
+            if let Some(new_content) = write_module(&chapter.content)? {
+                chapter.content = new_content;
             }
         }
     }
 
     Ok(())
+}
+
+fn write_module(source_text: &str) -> Result<Option<String>> {
+    let source = parse_module(source_text)?;
+
+    for item in source.items() {
+        if let Item::Fn(function) = item {
+            if is_named(&function, "body") {
+                if let Some(new_content) = write_function(function)? {
+                    return Ok(Some(new_content));
+                }
+            }
+        }
+    }
+
+    Ok(None)
 }
 
 fn write_function(function: ast::Fn) -> Result<Option<String>> {
