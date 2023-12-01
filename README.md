@@ -28,7 +28,7 @@ will be converted to:
 
 Paragraph text.
 
-```rust
+```rust,ignore
 some_code();
 ```
 ````

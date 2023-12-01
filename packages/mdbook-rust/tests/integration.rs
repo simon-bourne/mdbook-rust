@@ -35,7 +35,7 @@ fn basic() {
 
             Body text
 
-            ```rust
+            ```rust,ignore
             let x = 1;
             ```
         "},
@@ -107,7 +107,7 @@ fn code_only() {
         indoc! {"
 
 
-            ```rust
+            ```rust,ignore
             let x = 1;
             let y = 1;
             ```
@@ -128,7 +128,7 @@ fn code_spacing() {
         indoc! {"
 
 
-            ```rust
+            ```rust,ignore
             let x = 1;
 
             let y = 1;

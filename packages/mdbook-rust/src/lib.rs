@@ -177,7 +177,7 @@ fn ensure_in_code_block<'a>(in_code_block: &mut bool, whitespace: &'a str) -> &'
     let text = if *in_code_block {
         whitespace
     } else {
-        "\n\n```rust\n"
+        "\n\n```rust,ignore\n"
     };
 
     *in_code_block = true;
