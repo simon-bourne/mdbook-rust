@@ -1,16 +1,13 @@
 pub fn body() {
-    // Test
-    // Test
-    /*
-    fdasf
-    sdf
-    sdf
-    test_doc_comment_of_staticsdsfsd
+    // # Chapter 1
+    //
+    // Any function called `body` will have it's body converted to Markdown:
+    //
+    // - Non-doc comments are interpreted as Markdown
+    println!("Anything else is interpreted as Rust code");
+    // - Any other top level items are ignored.
+}
 
-    # */
-    let _x = 1;
-
-    for i in 0..10 {
-        println!("Hello {i}");
-    }
+pub fn ignore_me() {
+    // This will be ignored.
 }
