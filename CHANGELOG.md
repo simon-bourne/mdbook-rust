@@ -1,6 +1,6 @@
 # Changelog
 
-## Next
+## 0.1.1 2023-12-02
 
 - Add `,ignore` to Rust code fences
 - Fix comments on local function definitions

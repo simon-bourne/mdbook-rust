@@ -1099,7 +1099,7 @@ dependencies = [
 
 [[package]]
 name = "mdbook-rust"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "indoc",
@@ -2648,7 +2648,7 @@ checksum = "7e2c411759b501fb9501aac2b1b2d287a6e93e5bdcf13c25306b23e1b716dd0e"
 
 [[package]]
 name = "xtask"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "xtask-base",
 ]
