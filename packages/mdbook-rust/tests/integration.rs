@@ -136,3 +136,22 @@ fn code_spacing() {
         "},
     )
 }
+
+#[test]
+fn local_function() {
+    check(
+        indoc! {"
+            fn body() {
+                // Lorem ipsum
+                fn local() {}
+            }
+        "},
+        indoc! {"
+            Lorem ipsum
+
+            ```rust,ignore
+            fn local() {}
+            ```
+        "},
+    )
+}

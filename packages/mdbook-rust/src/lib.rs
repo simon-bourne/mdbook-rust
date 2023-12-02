@@ -57,33 +57,13 @@ fn write_body(
     let mut output = String::new();
 
     for node in stmts {
-        match &node {
-            NodeOrToken::Node(node) => {
-                output.push_str(ensure_in_code_block(&mut in_code_block, &whitespace));
-                output.push_str(&write_lines(node, longest_prefix));
-                whitespace.clear();
-            }
-            NodeOrToken::Token(token) => {
-                if let Some(comment) = ast::Comment::cast(token.clone()) {
-                    if comment.is_doc() {
-                        output.push_str(ensure_in_code_block(&mut in_code_block, &whitespace));
-                        output.push_str(&write_lines(comment, longest_prefix));
-                    } else {
-                        output.push_str(ensure_in_markdown(&mut in_code_block, &whitespace));
-                        output.push_str(&write_comment(comment, longest_prefix));
-                    }
-
-                    whitespace.clear();
-                } else if ast::Whitespace::can_cast(token.kind()) {
-                    whitespace =
-                        "\n".repeat(token.to_string().chars().filter(|c| *c == '\n').count())
-                } else {
-                    output.push_str(&whitespace);
-                    output.push_str(&write_lines(token, longest_prefix));
-                    whitespace.clear();
-                }
-            }
-        }
+        write_node_or_token(
+            &mut output,
+            &mut in_code_block,
+            &mut whitespace,
+            node,
+            longest_prefix,
+        );
     }
 
     if in_code_block {
@@ -93,6 +73,67 @@ fn write_body(
     output.push('\n');
 
     output
+}
+
+fn write_node_or_token(
+    output: &mut String,
+    in_code_block: &mut bool,
+    whitespace: &mut String,
+    node: NodeOrToken<SyntaxNode, SyntaxToken>,
+    longest_prefix: &str,
+) {
+    match &node {
+        NodeOrToken::Node(node) => {
+            let mut children = node.children_with_tokens();
+
+            // `Fn` nodes will have comments associated with them, rather than the parent.
+            // We want to include these comments as markdown.
+            for child in children.by_ref() {
+                if child.kind() == SyntaxKind::COMMENT || child.kind() == SyntaxKind::WHITESPACE {
+                    write_node_or_token(output, in_code_block, whitespace, child, longest_prefix);
+                } else {
+                    output.push_str(ensure_in_code_block(in_code_block, whitespace));
+                    output.push_str(&write_lines(child, longest_prefix));
+                    break;
+                }
+            }
+
+            for child in children {
+                output.push_str(&write_lines(child, longest_prefix));
+            }
+
+            whitespace.clear();
+        }
+        NodeOrToken::Token(token) => {
+            write_token(output, in_code_block, whitespace, token, longest_prefix);
+        }
+    }
+}
+
+fn write_token(
+    output: &mut String,
+    in_code_block: &mut bool,
+    whitespace: &mut String,
+    token: &SyntaxToken,
+    longest_prefix: &str,
+) {
+    if let Some(comment) = ast::Comment::cast(token.clone()) {
+        if comment.is_doc() {
+            output.push_str(ensure_in_code_block(in_code_block, &*whitespace));
+            output.push_str(&write_lines(comment, longest_prefix));
+        } else {
+            output.push_str(ensure_in_markdown(in_code_block, &*whitespace));
+            output.push_str(&write_comment(comment, longest_prefix));
+        }
+
+        whitespace.clear();
+    } else if ast::Whitespace::can_cast(token.kind()) {
+        *whitespace = "\n".repeat(token.to_string().chars().filter(|c| *c == '\n').count())
+    } else {
+        output.push_str(&*whitespace);
+        output.push_str(&write_lines(token, longest_prefix));
+        whitespace.clear();
+    }
 }
 
 fn write_lines(text: impl Display, prefix: &str) -> String {
