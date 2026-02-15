@@ -3,8 +3,7 @@ use std::{cmp::min, collections::VecDeque, fmt::Display};
 use anyhow::{bail, Result};
 use itertools::Itertools;
 use ra_ap_syntax::{
-    ast::{self, HasModuleItem, HasName, Item},
-    AstNode, AstToken, NodeOrToken, SourceFile, SyntaxKind, SyntaxNode, SyntaxToken,
+    AstNode, AstToken, Edition, NodeOrToken, SourceFile, SyntaxKind, SyntaxNode, SyntaxToken, ast::{self, HasModuleItem, HasName, Item}
 };
 
 pub fn write_module(source_text: &str) -> Result<Option<String>> {
@@ -166,7 +165,7 @@ fn write_comment(comment: ast::Comment, prefix: &str) -> String {
 }
 
 fn parse_module(source_text: &str) -> Result<SourceFile> {
-    let parsed = SourceFile::parse(source_text);
+    let parsed = SourceFile::parse(source_text, Edition::Edition2024);
     let errors = parsed.errors();
 
     if !errors.is_empty() {

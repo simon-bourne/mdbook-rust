@@ -17,7 +17,7 @@ anyhow = "1.0.75"
 indoc = "2.0.4"
 itertools = "0.12.0"
 mdbook = "0.4.36"
-ra_ap_syntax = "0.0.187"
+ra_ap_syntax = "0.0.319"
 semver = "1.0.20"
 serde_json = "1.0.108"
 xtask-base = { git = "https://github.com/simon-bourne/rust-xtask-base" }

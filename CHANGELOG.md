@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3 2026-02-15
+
+- Fix build
+
 ## 0.1.1 2023-12-02
 
 - Add `,ignore` to Rust code fences
